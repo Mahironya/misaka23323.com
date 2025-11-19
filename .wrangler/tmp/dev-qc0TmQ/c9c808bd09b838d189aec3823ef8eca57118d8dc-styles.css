@@ -236,10 +236,10 @@ body {
 .content table {
     border-spacing: 0;
     border-collapse: collapse;
-    margin: 1rem auto;        /* center table */
-    width: auto;              /* size to content */
-    max-width: 100%;          /* don't overflow container */
-    display: table;           /* allow margin:auto centering on desktop */
+    margin-bottom: 1rem;
+    width: 100%;
+    overflow: auto;
+    display: block;
 }
 .content table th, .content table td {
     padding: 6px 13px;
@@ -340,131 +340,6 @@ body {
     color: var(--bg-color);
 }
 
-/* Collections dropdown styling */
-.collections {
-    margin: 1rem 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-.collections label {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-.collections select {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    padding: 0.45rem 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #e8eaed;
-    background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24"><path fill="%23a1acb8" d="M7 10l5 5 5-5z"/></svg>') no-repeat right 8px center/12px 12px;
-    font-size: 1rem;
-    color: var(--text-color);
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(16,24,40,0.03);
-}
-.collections select:focus {
-    outline: none;
-    border-color: #cfd8e3;
-    box-shadow: 0 0 0 4px rgba(161,172,184,0.08);
-}
-
-/* Make dropdown full width on small screens */
-@media (max-width: 480px) {
-    .collections {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-    }
-    .collections select {
-        width: 100%;
-        background-position: right 12px center;
-    }
-}
-
-/* Custom collection dropdown (non-native) */
-.collection-dropdown {
-    position: relative;
-    min-width: 160px; /* reduced */
-    max-width: 320px; /* reduced */
-}
-.collection-dropdown .cd-toggle {
-    width: 100%;
-    text-align: left;
-    padding: 0.5rem 0.9rem;
-    border-radius: 10px;
-    border: 1px solid #e8eaed;
-    background: white;
-    font-size: 1rem;
-    color: var(--text-color);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-}
-.collection-dropdown .cd-toggle {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.collection-dropdown .cd-toggle .chev {
-    margin-left: 0.5rem;
-    color: var(--accent-color);
-    transition: transform 180ms ease;
-}
-.collection-dropdown .cd-menu {
-    position: absolute;
-    left: 0;
-    top: calc(100% + 8px);
-    width: 100%;
-    background: white;
-    border: 1px solid #eaeaea;
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(16,24,40,0.08);
-    list-style: none;
-    padding: 0.4rem 0;
-    margin: 0;
-    opacity: 0;
-    transform: translateY(-6px) scale(0.98);
-    transform-origin: top right;
-    pointer-events: none;
-    transition: opacity 160ms ease, transform 160ms ease;
-    z-index: 1005;
-}
-.collection-dropdown .cd-menu.open {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    pointer-events: auto;
-}
-.collection-dropdown .cd-item {
-    padding: 0 0.5rem;
-}
-.collection-dropdown .cd-item button {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-    border: 0;
-    background: transparent;
-    font-size: 0.98rem;
-    color: var(--text-color);
-    cursor: pointer;
-    border-radius: 6px;
-}
-.collection-dropdown .cd-item button:hover {
-    background: var(--card-hover);
-}
-.collection-dropdown .cd-menu.open + .dummy { display:none; }
-
-@media (max-width: 480px) {
-    .collection-dropdown {
-        width: 100%;
-        min-width: auto;
-        max-width: none;
-    }
-}
-
 /* Responsive */
 @media (max-width: 768px) {
     .nav-links {
@@ -553,12 +428,5 @@ body {
 
     .container {
         padding-top: calc(var(--nav-height) + 2rem);
-    }
-
-    /* On small screens, make tables block-level and horizontally scrollable */
-    .content table {
-        display: block;
-        width: 100%;
-        overflow-x: auto;
     }
 }

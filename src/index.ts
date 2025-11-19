@@ -3,7 +3,8 @@ import markedKatex from 'marked-katex-extension';
 import styles from './styles.css';
 
 marked.use(markedKatex({
-  throwOnError: false
+    throwOnError: false,
+    nonStandard: true
 }));
 
 const GITHUB_OWNER = 'Mahironya';
@@ -125,7 +126,7 @@ function render(title: string, content: string) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" integrity="sha384-wcIxkf4k558AjM3Cd3q6S5L036Vyu+86IPDgKS0Wl9UClhYJe19ehkw+53TRagLX" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -261,17 +262,90 @@ function renderHomePage() {
     return render("Mahiro Oyama", content);
 }
 
-async function renderArticlesPage() {
+async function renderArticlesPage(url?: URL) {
     const articles = await fetchArticlesList();
+    const collectionFilter = url?.searchParams.get('collection') || '';
     // Sort articles by date descending (newest first)
     const sortedArticles = [...articles].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-    const articlesHtml = sortedArticles.map(article => `
+    // collect unique collections
+    const collections = Array.from(new Set(sortedArticles.map(a => (a as any).collection).filter(Boolean)));
+
+    const filtered = collectionFilter ? sortedArticles.filter(a => (a as any).collection === collectionFilter) : sortedArticles;
+
+    const articlesHtml = filtered.map(article => `
         <div class="article-item">
             <h2><a href="/articles/${article.slug}">${article.title}</a></h2>
-            <p>${article.date}</p>
+            <p>${article.date}${(article as any).collection ? ` • <a href="/articles?collection=${encodeURIComponent((article as any).collection)}">${(article as any).collection}</a>` : ''}</p>
         </div>
     `).join('');
+
+        // Render a custom dropdown and populate it on the client by fetching articles.json
+        const collectionsHtml = `
+            <div class="collections">
+                <label><strong>Collections:</strong></label>
+                <div class="collection-dropdown" id="collectionDropdown">
+                    <button type="button" class="cd-toggle" id="cdToggle">All <span class="chev">▾</span></button>
+                    <ul class="cd-menu" id="cdMenu" aria-hidden="true"></ul>
+                </div>
+            </div>
+            <script>
+                (function(){
+                    const toggle = document.getElementById('cdToggle');
+                    const menu = document.getElementById('cdMenu');
+                    if (!toggle || !menu) return;
+                    const params = new URL(location.href).searchParams;
+                    const current = params.get('collection') || '';
+
+                    function closeMenu() {
+                        menu.classList.remove('open');
+                        menu.setAttribute('aria-hidden', 'true');
+                    }
+
+                    function openMenu() {
+                        menu.classList.add('open');
+                        menu.setAttribute('aria-hidden', 'false');
+                    }
+
+                    toggle.addEventListener('click', function(e){
+                        e.stopPropagation();
+                        if (menu.classList.contains('open')) closeMenu(); else openMenu();
+                    });
+
+                    // click outside to close
+                    document.addEventListener('click', function(){ closeMenu(); });
+                    menu.addEventListener('click', function(e){ e.stopPropagation(); });
+
+                    // fetch collections and populate
+                    fetch('${BASE_URL}/articles.json')
+                        .then(r => r.json())
+                        .then(list => {
+                            const cols = Array.from(new Set(list.map(a => a.collection).filter(Boolean)));
+                            // always include 'All' as first
+                            const items = ['All'].concat(cols);
+                            items.forEach(it => {
+                                const li = document.createElement('li');
+                                li.className = 'cd-item';
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.textContent = it;
+                                btn.dataset.value = it === 'All' ? '' : encodeURIComponent(it);
+                                btn.addEventListener('click', function(){
+                                    const v = this.dataset.value || '';
+                                    if (!v) location.href = '/articles';
+                                    else location.href = '/articles?collection=' + v;
+                                });
+                                li.appendChild(btn);
+                                menu.appendChild(li);
+                                // set current label
+                                if ((it === 'All' && !current) || (it !== 'All' && (it === current || encodeURIComponent(it) === current))) {
+                                    toggle.childNodes[0].textContent = it + ' ';
+                                }
+                            });
+                        }).catch(() => {/* ignore errors */});
+                })();
+            <\/script>
+        `;
 
     const content = `
 <div class="article-list">
@@ -279,6 +353,7 @@ async function renderArticlesPage() {
         <h1>Articles</h1>
         <a href="/publish" class="btn-primary">Publish Article</a>
     </div>
+    ${collectionsHtml}
     ${articlesHtml}
 </div>
 `;
@@ -301,6 +376,11 @@ function renderPublishPage() {
         <div class="form-group">
             <label for="slug">Slug</label>
             <input type="text" id="slug" name="slug" required placeholder="my-new-article">
+        </div>
+        <div class="form-group">
+            <label for="collection">Collection (optional)</label>
+            <input list="collectionsList" id="collection" name="collection" placeholder="Choose or type to add">
+            <datalist id="collectionsList"></datalist>
         </div>
         <div class="form-group">
             <label for="content">Content (Markdown)</label>
@@ -359,13 +439,30 @@ function renderPublishPage() {
         }
     });
 </script>
+<script>
+                // Populate publish page collection datalist with existing collections
+                (function(){
+                        const datalist = document.getElementById('collectionsList');
+                        if (!datalist) return;
+                        fetch('${BASE_URL}/articles.json')
+                            .then(r => r.json())
+                            .then(list => {
+                                const cols = Array.from(new Set(list.map(a => a.collection).filter(Boolean)));
+                                cols.forEach(c => {
+                                    const opt = document.createElement('option');
+                                    opt.value = c;
+                                    datalist.appendChild(opt);
+                                });
+                            }).catch(() => {/* ignore errors */});
+                })();
+        </script>
 `;
     return render("Publish Article", content);
 }
 
 async function handlePublish(request: Request) {
     try {
-        const { token, title, slug, content } = await request.json() as any;
+        const { token, title, slug, content, collection } = await request.json() as any;
         
         if (!token || !title || !slug || !content) {
             return new Response('Missing required fields', { status: 400 });
@@ -421,12 +518,17 @@ async function handlePublish(request: Request) {
         const currentContent = JSON.parse(decodeURIComponent(escape(atob(currentFile.content))));
         
         // Add new article
-        const newArticle = {
+        const newArticle: any = {
             title,
             slug,
             date,
             file: `./articles/${filename}`
         };
+
+        // include collection if provided
+        if (collection) {
+            newArticle.collection = collection;
+        }
         
         const newContent = [...currentContent, newArticle];
 
@@ -457,10 +559,12 @@ async function renderArticlePage(slug: string) {
     const markdown = await fetchArticleContent(article.file);
     const htmlContent = marked(markdown);
 
+    const collectionHtml = (article as any).collection ? ` • <a href="/articles?collection=${encodeURIComponent((article as any).collection)}">${(article as any).collection}</a>` : '';
+
     const content = `
 <div class="article-content">
     <h1>${article.title}</h1>
-    <p class="article-meta">${article.date}</p>
+    <p class="article-meta">${article.date}${collectionHtml}</p>
     <div class="content">
         ${htmlContent}
     </div>
@@ -485,7 +589,7 @@ export default {
     }
 
     if (path === '/articles') {
-        const html = await renderArticlesPage();
+        const html = await renderArticlesPage(url);
         return new Response(html, { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
     }
 
