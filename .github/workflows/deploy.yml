@@ -22,9 +22,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
         
-      - name: Generate Articles
-        run: npm run generate-articles
-        
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
