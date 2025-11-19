@@ -1,12 +1,13 @@
 [
   {
     "title": "学部生が研究に走るということ——慎重に、そして確かに",
-    "slug": "my-first-article",
+    "slug": "my-first-articlefadsfsdf",
     "date": "2025-11-19",
-    "file": "./articles/my-first-article.md"
+    "file": "./articles/my-first-article.md",
+    "collection": "asddasdsa"
   },
   {
-    "title": "Hello Sekai",
+    "title": "Hello Sekai!",
     "slug": "test",
     "date": "2025-11-19",
     "file": "./articles/test.md"
@@ -23,5 +24,12 @@
     "date": "2025-11-19",
     "file": "./articles/20251119150804-duck-physics-problem.md",
     "collection": "Physics"
+  },
+  {
+    "title": "hi",
+    "slug": "hi",
+    "date": "2025-11-19",
+    "file": "./src/articles/20251119172535-hi.md",
+    "collection": "test"
   }
 ]
