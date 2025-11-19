@@ -1,5 +1,12 @@
 {
   "name": "misaka23323-com",
   "compatibility_date": "2025-11-19",
-  "main": "src/index.ts"
+  "main": "src/index.ts",
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/*.md"],
+      "fallthrough": true
+    }
+  ]
 }

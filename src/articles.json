@@ -1,0 +1,14 @@
+[
+  {
+    "title": "My First Article",
+    "slug": "my-first-article",
+    "date": "2025-11-19",
+    "file": "./articles/my-first-article.md"
+  },
+  {
+    "title": "Another Interesting Article",
+    "slug": "another-interesting-article",
+    "date": "2025-11-20",
+    "file": "./articles/another-interesting-article.md"
+  }
+]
