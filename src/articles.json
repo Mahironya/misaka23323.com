@@ -24,5 +24,12 @@
     "date": "2025-11-19",
     "file": "./articles/20251119150804-duck-physics-problem.md",
     "collection": "Physics"
+  },
+  {
+    "title": "hi",
+    "slug": "hi",
+    "date": "2025-11-19",
+    "file": "./src/articles/20251119172535-hi.md",
+    "collection": "test"
   }
 ]
