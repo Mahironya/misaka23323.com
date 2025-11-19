@@ -504,10 +504,12 @@ async function renderPublishPage(url?: URL) {
 
 async function handlePublish(request: Request) {
     try {
-        const { token, title, slug, content, collection } = await request.json() as any;
-        // detect edit mode
-        const originalFile = (await request.json())?.originalFile;
-        
+        // Read request body ONCE — reading multiple times causes "Body has already been used"
+        const bodyJson = await request.json() as any;
+        const { token, title, slug, content, collection } = bodyJson;
+        const providedOriginalFile = bodyJson.originalFile || '';
+        const providedOriginalSlug = bodyJson.originalSlug || '';
+
         if (!token || !title || !slug || !content) {
             return new Response('Missing required fields', { status: 400 });
         }
@@ -520,8 +522,6 @@ async function handlePublish(request: Request) {
         let currentFileSha: string | undefined = undefined;
 
         // If originalFile provided, use it (edit mode). Otherwise create a new file with timestamp.
-        const bodyJson = await request.json() as any;
-        const providedOriginalFile = bodyJson.originalFile || '';
         if (providedOriginalFile) {
             filePath = providedOriginalFile.replace(/^\.\//, '');
             // fetch file metadata to get sha for update

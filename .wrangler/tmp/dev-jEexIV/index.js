@@ -17174,8 +17174,10 @@ Write your content here...">${esc(contentVal)}</textarea>
 __name(renderPublishPage, "renderPublishPage");
 async function handlePublish(request) {
   try {
-    const { token, title, slug, content, collection } = await request.json();
-    const originalFile = (await request.json())?.originalFile;
+    const bodyJson = await request.json();
+    const { token, title, slug, content, collection } = bodyJson;
+    const providedOriginalFile = bodyJson.originalFile || "";
+    const providedOriginalSlug = bodyJson.originalSlug || "";
     if (!token || !title || !slug || !content) {
       return new Response("Missing required fields", { status: 400 });
     }
@@ -17184,8 +17186,6 @@ async function handlePublish(request) {
     const date = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     let filePath = "";
     let currentFileSha = void 0;
-    const bodyJson = await request.json();
-    const providedOriginalFile = bodyJson.originalFile || "";
     if (providedOriginalFile) {
       filePath = providedOriginalFile.replace(/^\.\//, "");
       try {
