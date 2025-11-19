@@ -256,6 +256,90 @@ body {
 .content a { color: var(--accent-color); text-decoration: none; }
 .content a:hover { text-decoration: underline; }
 
+/* Form Styles */
+.publish-form {
+    max-width: 800px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid #eaeaea;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #eaeaea;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    background: white;
+}
+
+.form-group textarea {
+    min-height: 400px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+}
+
+.btn-submit {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    width: 100%;
+}
+
+.btn-submit:hover {
+    opacity: 0.8;
+}
+
+.btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header-actions h1 {
+    margin-bottom: 0;
+}
+
+.btn-primary {
+    display: inline-block;
+    background-color: var(--text-color);
+    color: var(--bg-color);
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.btn-primary:hover {
+    opacity: 0.8;
+    color: var(--bg-color);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .nav-links {

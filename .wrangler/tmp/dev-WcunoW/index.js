@@ -68,7 +68,7 @@ function escape$1(html2, encode) {
 }
 __name(escape$1, "escape$1");
 var unescapeTest = /&(#(?:\d+)|(?:#x[0-9A-Fa-f]+)|(?:\w+));?/ig;
-function unescape(html2) {
+function unescape2(html2) {
   return html2.replace(unescapeTest, (_, n) => {
     n = n.toLowerCase();
     if (n === "colon")
@@ -79,7 +79,7 @@ function unescape(html2) {
     return "";
   });
 }
-__name(unescape, "unescape");
+__name(unescape2, "unescape");
 var caret = /(^|[^\[])\^/g;
 function edit(regex, opt) {
   let source = typeof regex === "string" ? regex : regex.source;
@@ -885,7 +885,7 @@ var blockPedantic = {
   lheading: /^(.+?)\n {0,3}(=+|-+) *(?:\n+|$)/,
   paragraph: edit(_paragraph).replace("hr", hr).replace("heading", " *#{1,6} *[^\n]").replace("lheading", lheading).replace("|table", "").replace("blockquote", " {0,3}>").replace("|fences", "").replace("|list", "").replace("|html", "").replace("|tag", "").getRegex()
 };
-var escape = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
+var escape2 = /^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])/;
 var inlineCode = /^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)/;
 var br = /^( {2,}|\\)\n(?!\s*$)/;
 var inlineText = /^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))/;
@@ -916,7 +916,7 @@ var inlineNormal = {
   emStrongLDelim,
   emStrongRDelimAst,
   emStrongRDelimUnd,
-  escape,
+  escape: escape2,
   link,
   nolink,
   punctuation,
@@ -933,7 +933,7 @@ var inlinePedantic = {
 };
 var inlineGfm = {
   ...inlineNormal,
-  escape: edit(escape).replace("])", "~|])").getRegex(),
+  escape: edit(escape2).replace("])", "~|])").getRegex(),
   url: edit(/^((?:ftp|https?):\/\/|www\.)(?:[a-zA-Z0-9\-]+\.?)+[^\s<]*|^email/, "i").replace("email", /[A-Za-z0-9._+-]+(@)[a-zA-Z0-9-_]+(?:\.[a-zA-Z0-9-_]*[a-zA-Z0-9])+(?![-_])/).getRegex(),
   _backpedal: /(?:[^?!.,:;*_'"~()&]+|\([^)]*\)|&(?![a-zA-Z0-9]+;$)|[?!.,:;*_'"~)]+(?!$))+/,
   del: /^(~~?)(?=[^\s~])([\s\S]*?[^\s~])\1(?=[^~]|$)/,
@@ -1521,7 +1521,7 @@ var _Parser = class {
         }
         case "heading": {
           const headingToken = token;
-          out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape(this.parseInline(headingToken.tokens, this.textRenderer)));
+          out += this.renderer.heading(this.parseInline(headingToken.tokens), headingToken.depth, unescape2(this.parseInline(headingToken.tokens, this.textRenderer)));
           continue;
         }
         case "code": {
@@ -2167,10 +2167,10 @@ var ESCAPE_LOOKUP = {
   "'": "&#x27;"
 };
 var ESCAPE_REGEX = /[&><"']/g;
-function escape2(text2) {
+function escape3(text2) {
   return String(text2).replace(ESCAPE_REGEX, (match) => ESCAPE_LOOKUP[match]);
 }
-__name(escape2, "escape");
+__name(escape3, "escape");
 var getBaseElem = /* @__PURE__ */ __name(function getBaseElem2(group) {
   if (group.type === "ordgroup") {
     if (group.body.length === 1) {
@@ -2215,7 +2215,7 @@ var protocolFromUrl = /* @__PURE__ */ __name(function protocolFromUrl2(url) {
 }, "protocolFromUrl");
 var utils = {
   deflt,
-  escape: escape2,
+  escape: escape3,
   hyphenate,
   getBaseElem,
   isCharacterBox,
@@ -16724,7 +16724,7 @@ var articles = [
 ];
 
 // src/index.ts
-import styles2 from "./da82a413cbf88b775d403aa96a29a980a5aeb79d-styles.css";
+import styles2 from "./59e564d73b7741b36d5dcdd6892b5ed2cbe456ed-styles.css";
 marked.use(src_default({
   throwOnError: false
 }));
@@ -16935,13 +16935,154 @@ function renderArticlesPage() {
     `).join("");
   const content = `
 <div class="article-list">
-    <h1>Articles</h1>
+    <div class="header-actions">
+        <h1>Articles</h1>
+        <a href="/publish" class="btn-primary">Publish Article</a>
+    </div>
     ${articlesHtml}
 </div>
 `;
   return render3("Articles", content);
 }
 __name(renderArticlesPage, "renderArticlesPage");
+function renderPublishPage() {
+  const content = `
+<div class="publish-form">
+    <h1>Publish New Article</h1>
+    <form id="publishForm">
+        <div class="form-group">
+            <label for="token">GitHub Token (repo scope)</label>
+            <input type="password" id="token" name="token" required placeholder="ghp_...">
+        </div>
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="My New Article">
+        </div>
+        <div class="form-group">
+            <label for="slug">Slug</label>
+            <input type="text" id="slug" name="slug" required placeholder="my-new-article">
+        </div>
+        <div class="form-group">
+            <label for="content">Content (Markdown)</label>
+            <textarea id="content" name="content" required placeholder="# Hello World
+
+Write your content here..."></textarea>
+        </div>
+        <button type="submit" class="btn-submit" id="submitBtn">Publish</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('publishForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const titleInput = document.getElementById('title');
+    const slugInput = document.getElementById('slug');
+
+    // Auto-generate slug from title
+    titleInput.addEventListener('input', (e) => {
+        if (!slugInput.value || slugInput.value === slugInput.getAttribute('data-auto')) {
+            const slug = e.target.value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '');
+            slugInput.value = slug;
+            slugInput.setAttribute('data-auto', slug);
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Publishing...';
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error);
+            }
+
+            alert('Article published successfully! It may take a few minutes for the site to update.');
+            window.location.href = '/articles';
+        } catch (error) {
+            alert('Error publishing article: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Publish';
+        }
+    });
+<\/script>
+`;
+  return render3("Publish Article", content);
+}
+__name(renderPublishPage, "renderPublishPage");
+async function handlePublish(request) {
+  try {
+    const { token, title, slug, content } = await request.json();
+    if (!token || !title || !slug || !content) {
+      return new Response("Missing required fields", { status: 400 });
+    }
+    const owner = "Mahironya";
+    const repo = "misaka23323.com";
+    const date = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const filePath = `src/articles/${slug}.md`;
+    const githubFetch = /* @__PURE__ */ __name(async (path2, options2 = {}) => {
+      const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path2}`;
+      const res = await fetch(url, {
+        ...options2,
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "User-Agent": "Cloudflare-Worker",
+          "Accept": "application/vnd.github.v3+json",
+          ...options2.headers
+        }
+      });
+      if (!res.ok) {
+        throw new Error(`GitHub API Error: ${res.status} ${res.statusText}`);
+      }
+      return res.json();
+    }, "githubFetch");
+    await githubFetch(filePath, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `Add article: ${title}`,
+        content: btoa(unescape(encodeURIComponent(content)))
+        // Handle UTF-8
+      })
+    });
+    const articlesJsonPath = "src/articles.json";
+    const currentFile = await githubFetch(articlesJsonPath);
+    const currentContent = JSON.parse(decodeURIComponent(escape(atob(currentFile.content))));
+    const newArticle = {
+      title,
+      slug,
+      date,
+      file: `./articles/${slug}.md`
+    };
+    const newContent = [...currentContent, newArticle];
+    await githubFetch(articlesJsonPath, {
+      method: "PUT",
+      body: JSON.stringify({
+        message: `Update articles.json for: ${title}`,
+        content: btoa(unescape(encodeURIComponent(JSON.stringify(newContent, null, 2)))),
+        sha: currentFile.sha
+      })
+    });
+    return new Response("Published successfully", { status: 200 });
+  } catch (error) {
+    return new Response(error.message || "Internal Server Error", { status: 500 });
+  }
+}
+__name(handlePublish, "handlePublish");
 function renderArticlePage(slug) {
   const article = articles.find((a) => a.slug === slug);
   if (!article) {
@@ -16975,6 +17116,12 @@ var src_default2 = {
     }
     if (path2 === "/articles") {
       return new Response(renderArticlesPage(), { headers: { "Content-Type": "text/html;charset=UTF-8" } });
+    }
+    if (path2 === "/publish") {
+      return new Response(renderPublishPage(), { headers: { "Content-Type": "text/html;charset=UTF-8" } });
+    }
+    if (path2 === "/api/publish" && request.method === "POST") {
+      return handlePublish(request);
     }
     const articleMatch = path2.match(/^\/articles\/(.+)/);
     if (articleMatch) {

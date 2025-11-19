@@ -233,11 +233,165 @@ function renderArticlesPage() {
 
     const content = `
 <div class="article-list">
-    <h1>Articles</h1>
+    <div class="header-actions">
+        <h1>Articles</h1>
+        <a href="/publish" class="btn-primary">Publish Article</a>
+    </div>
     ${articlesHtml}
 </div>
 `;
     return render("Articles", content);
+}
+
+function renderPublishPage() {
+    const content = `
+<div class="publish-form">
+    <h1>Publish New Article</h1>
+    <form id="publishForm">
+        <div class="form-group">
+            <label for="token">GitHub Token (repo scope)</label>
+            <input type="password" id="token" name="token" required placeholder="ghp_...">
+        </div>
+        <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" name="title" required placeholder="My New Article">
+        </div>
+        <div class="form-group">
+            <label for="slug">Slug</label>
+            <input type="text" id="slug" name="slug" required placeholder="my-new-article">
+        </div>
+        <div class="form-group">
+            <label for="content">Content (Markdown)</label>
+            <textarea id="content" name="content" required placeholder="# Hello World\n\nWrite your content here..."></textarea>
+        </div>
+        <button type="submit" class="btn-submit" id="submitBtn">Publish</button>
+    </form>
+</div>
+
+<script>
+    const form = document.getElementById('publishForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const titleInput = document.getElementById('title');
+    const slugInput = document.getElementById('slug');
+
+    // Auto-generate slug from title
+    titleInput.addEventListener('input', (e) => {
+        if (!slugInput.value || slugInput.value === slugInput.getAttribute('data-auto')) {
+            const slug = e.target.value
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '');
+            slugInput.value = slug;
+            slugInput.setAttribute('data-auto', slug);
+        }
+    });
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Publishing...';
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch('/api/publish', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
+
+            if (!response.ok) {
+                const error = await response.text();
+                throw new Error(error);
+            }
+
+            alert('Article published successfully! It may take a few minutes for the site to update.');
+            window.location.href = '/articles';
+        } catch (error) {
+            alert('Error publishing article: ' + error.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Publish';
+        }
+    });
+</script>
+`;
+    return render("Publish Article", content);
+}
+
+async function handlePublish(request: Request) {
+    try {
+        const { token, title, slug, content } = await request.json() as any;
+        
+        if (!token || !title || !slug || !content) {
+            return new Response('Missing required fields', { status: 400 });
+        }
+
+        const owner = 'Mahironya';
+        const repo = 'misaka23323.com';
+        const date = new Date().toISOString().split('T')[0];
+        const filePath = `src/articles/${slug}.md`;
+        
+        // Helper to call GitHub API
+        const githubFetch = async (path: string, options: any = {}): Promise<any> => {
+            const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+            const res = await fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'User-Agent': 'Cloudflare-Worker',
+                    'Accept': 'application/vnd.github.v3+json',
+                    ...options.headers,
+                },
+            });
+            if (!res.ok) {
+                throw new Error(`GitHub API Error: ${res.status} ${res.statusText}`);
+            }
+            return res.json();
+        };
+
+        // 1. Create the markdown file
+        await githubFetch(filePath, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: `Add article: ${title}`,
+                content: btoa(unescape(encodeURIComponent(content))), // Handle UTF-8
+            }),
+        });
+
+        // 2. Update articles.json
+        // First get current content to get SHA
+        const articlesJsonPath = 'src/articles.json';
+        const currentFile = await githubFetch(articlesJsonPath);
+        const currentContent = JSON.parse(decodeURIComponent(escape(atob(currentFile.content))));
+        
+        // Add new article
+        const newArticle = {
+            title,
+            slug,
+            date,
+            file: `./articles/${slug}.md`
+        };
+        
+        const newContent = [...currentContent, newArticle];
+
+        // Update file
+        await githubFetch(articlesJsonPath, {
+            method: 'PUT',
+            body: JSON.stringify({
+                message: `Update articles.json for: ${title}`,
+                content: btoa(unescape(encodeURIComponent(JSON.stringify(newContent, null, 2)))),
+                sha: currentFile.sha,
+            }),
+        });
+
+        return new Response('Published successfully', { status: 200 });
+
+    } catch (error: any) {
+        return new Response(error.message || 'Internal Server Error', { status: 500 });
+    }
 }
 
 function renderArticlePage(slug: string) {
@@ -278,6 +432,14 @@ export default {
 
     if (path === '/articles') {
         return new Response(renderArticlesPage(), { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
+    }
+
+    if (path === '/publish') {
+        return new Response(renderPublishPage(), { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
+    }
+
+    if (path === '/api/publish' && request.method === 'POST') {
+        return handlePublish(request);
     }
 
     const articleMatch = path.match(/^\/articles\/(.+)/);
