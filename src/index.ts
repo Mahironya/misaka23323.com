@@ -83,7 +83,12 @@ const scripts = `
 
     // Close menu when clicking a link
     navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
+        link.addEventListener('click', (e) => {
+             // Don't close menu if clicking a dropdown toggle
+             if (link.parentElement.classList.contains('dropdown')) {
+                 e.preventDefault();
+                 return;
+             }
              if (navLinks.classList.contains('active')) toggleMenu();
         });
     });
