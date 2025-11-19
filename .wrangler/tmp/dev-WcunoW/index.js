@@ -16702,7 +16702,7 @@ function blockKatex(options2, renderer) {
 __name(blockKatex, "blockKatex");
 
 // src/generated-articles.ts
-import article_0 from "./f7f84271d03bc57343d7816227fc5f525f123701-my-first-article.md";
+import article_0 from "./17c4392db79de1742c78adbd8c1a8d2870bffddd-my-first-article.md";
 import article_1 from "./91013a605f7b2f42e599f0a8234d92cd81d5a46d-another-interesting-article.md";
 var articleContents = {
   "./articles/my-first-article.md": article_0,
