@@ -363,55 +363,83 @@ async function renderPublishPage(url?: URL) {
             try {
                 contentVal = await fetchArticleContent(article.file || '');
             } catch (e) {
-                contentVal = '';
-            }
+                const owner = 'Mahironya';
+                const repo = 'misaka23323.com';
         }
-    }
+                let filePath = '';
+                let currentFileSha: string | undefined = undefined;
 
-    // simple escaper for attribute values
-    const esc = (s: string) => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+                // Helper to call GitHub API and surface error body
+                const githubFetch = async (path: string, options: any = {}): Promise<any> => {
+                    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+                    const res = await fetch(url, {
+                        ...options,
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'User-Agent': 'Cloudflare-Worker',
+                            'Accept': 'application/vnd.github.v3+json',
+                            ...options.headers,
+                        },
+                    });
+                    if (!res.ok) {
+                        let errBody = '';
+                        try {
+                            const j = await res.json();
+                            errBody = j && (j.message || JSON.stringify(j));
+                        } catch (e) {
+                            try { errBody = await res.text(); } catch (_) { errBody = ''; }
+                        }
+                        throw new Error(`GitHub API Error: ${res.status} ${res.statusText}${errBody ? ' - ' + errBody : ''}`);
+                    }
+                    return res.json();
+                };
 
-    const content = `
-<div class="publish-form">
-    <h1>Publish New Article</h1>
-    <form id="publishForm">
-        <div class="form-group">
-            <label for="token">GitHub Token</label>
-            <input type="password" id="token" name="token" required placeholder="ghp_...">
-        </div>
-        <div class="form-group">
-            <label for="title">Title</label>
-            <input type="text" id="title" name="title" required placeholder="My New Article" value="${esc(titleVal)}">
-        </div>
-        <div class="form-group">
-            <label for="slug">Slug</label>
-            <input type="text" id="slug" name="slug" required placeholder="my-new-article" value="${esc(slugVal)}">
-        </div>
-        <div class="form-group">
-            <label for="collection">Collection (optional)</label>
-            <div class="combobox-wrapper">
-                <input type="text" id="collection" name="collection" placeholder="Choose or type to add" autocomplete="off" value="${esc(collectionVal)}">
-                <ul id="collectionMenu" class="combobox-menu"></ul>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="content">Content (Markdown)</label>
-            <textarea id="content" name="content" required placeholder="# Hello World\n\nWrite your content here...">${esc(contentVal)}</textarea>
-        </div>
-        ${isEdit ? `<input type="hidden" name="originalFile" value="${esc(originalFileVal)}">` : ''}
-        ${isEdit ? `<input type="hidden" name="originalSlug" value="${esc(slugVal)}">` : ''}
-        <button type="submit" class="btn-submit" id="submitBtn">${isEdit ? 'Update Article' : 'Publish'}</button>
-    </form>
-</div>
-
-<script>
-    const form = document.getElementById('publishForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const titleInput = document.getElementById('title');
-    const slugInput = document.getElementById('slug');
-
-    // Auto-generate slug from title
-    titleInput.addEventListener('input', (e) => {
+                // If originalFile provided, use it (edit mode). Otherwise create a new file with timestamp.
+                const providedOriginalFile = (bodyJson && bodyJson.originalFile) || '';
+                if (providedOriginalFile) {
+                    // articles.json stores paths like "./articles/xxxx.md" — GitHub API needs the repo path, which is under "src/..."
+                    filePath = `src/${providedOriginalFile.replace(/^\.\//, '')}`;
+                    // preserve the original file ref to write into articles.json later
+                    var fileRef = providedOriginalFile;
+                    // fetch file metadata to get sha for update
+                    try {
+                        const metaUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`;
+                        const metaRes = await fetch(metaUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'User-Agent': 'Cloudflare-Worker',
+                                'Accept': 'application/vnd.github.v3+json',
+                            }
+                        });
+                        if (metaRes.ok) {
+                            const meta = await metaRes.json();
+                            currentFileSha = meta.sha;
+                        } else if (metaRes.status === 404) {
+                            // file not found: it will be created as new
+                            currentFileSha = undefined;
+                        } else {
+                            let errBody = '';
+                            try { const j = await metaRes.json(); errBody = j && (j.message || JSON.stringify(j)); } catch { try { errBody = await metaRes.text(); } catch (_) { errBody = ''; } }
+                            throw new Error(`GitHub API Error: ${metaRes.status} ${metaRes.statusText}${errBody ? ' - ' + errBody : ''}`);
+                        }
+                    } catch (e) {
+                        // propagate error to caller
+                        throw e;
+                    }
+                } else {
+                    // Use timestamp (YYYYMMDDHHmmss) in filename to ensure uniqueness
+                    const now = new Date();
+                    const timestamp = now.getFullYear() +
+                        String(now.getMonth() + 1).padStart(2, '0') +
+                        String(now.getDate()).padStart(2, '0') +
+                        String(now.getHours()).padStart(2, '0') +
+                        String(now.getMinutes()).padStart(2, '0') +
+                        String(now.getSeconds()).padStart(2, '0');
+                    const filename = `${timestamp}-${slug}.md`;
+                    filePath = `src/articles/${filename}`;
+                    var fileRef = `./articles/${filename}`;
+                }
         if (!slugInput.value || slugInput.value === slugInput.getAttribute('data-auto')) {
             const slug = e.target.value
                 .toLowerCase()
@@ -581,8 +609,7 @@ async function handlePublish(request: Request) {
         const currentContent = JSON.parse(decodeURIComponent(escape(atob(currentFile.content))));
         
         // Add or update article entry in articles.json
-        // Determine the file path string used in articles.json (prefixed with ./articles/...)
-        const fileRef = `./${filePath}`.replace(/^\.\//, './');
+        // fileRef variable was set above: for edits keep original './articles/..', for new files the generated './articles/...'
 
         const newArticle: any = {
             title,
