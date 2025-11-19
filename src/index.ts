@@ -24,6 +24,9 @@ export interface Env {
 // CSS moved to styles.css
 
 const navBar = `
+<div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+</div>
 <nav class="navbar">
     <a href="/" class="logo">Mahiro Oyama</a>
     <div class="menu-toggle">☰</div>
@@ -62,6 +65,17 @@ const scripts = `
             }
         });
     });
+
+    // Progress Bar
+    window.onscroll = function() {
+        const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+        const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrolled = (winScroll / height) * 100;
+        const progressBar = document.getElementById("progressBar");
+        if (progressBar) {
+            progressBar.style.width = scrolled + "%";
+        }
+    };
 </script>
 `;
 
