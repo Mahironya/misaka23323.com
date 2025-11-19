@@ -224,7 +224,10 @@ function renderHomePage() {
 }
 
 function renderArticlesPage() {
-    const articlesHtml = articles.map(article => `
+    // Sort articles by date descending (newest first)
+    const sortedArticles = [...articles].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    const articlesHtml = sortedArticles.map(article => `
         <div class="article-item">
             <h2><a href="/articles/${article.slug}">${article.title}</a></h2>
             <p>${article.date}</p>
@@ -332,7 +335,10 @@ async function handlePublish(request: Request) {
         const owner = 'Mahironya';
         const repo = 'misaka23323.com';
         const date = new Date().toISOString().split('T')[0];
-        const filePath = `src/articles/${slug}.md`;
+        // Use timestamp in filename to ensure uniqueness
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `${timestamp}-${slug}.md`;
+        const filePath = `src/articles/${filename}`;
         
         // Helper to call GitHub API
         const githubFetch = async (path: string, options: any = {}): Promise<any> => {
@@ -372,7 +378,7 @@ async function handlePublish(request: Request) {
             title,
             slug,
             date,
-            file: `./articles/${slug}.md`
+            file: `./articles/${filename}`
         };
         
         const newContent = [...currentContent, newArticle];
