@@ -1,11 +1,29 @@
 import { marked } from 'marked';
 import markedKatex from 'marked-katex-extension';
-import { articles, articleContents } from './generated-articles';
 import styles from './styles.css';
 
 marked.use(markedKatex({
   throwOnError: false
 }));
+
+const GITHUB_OWNER = 'Mahironya';
+const GITHUB_REPO = 'misaka23323.com';
+const GITHUB_BRANCH = 'main';
+const BASE_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/src`;
+
+async function fetchArticlesList() {
+    const response = await fetch(`${BASE_URL}/articles.json`);
+    if (!response.ok) return [];
+    return await response.json() as any[];
+}
+
+async function fetchArticleContent(filename: string) {
+    // Remove ./ from the beginning if present
+    const cleanPath = filename.replace(/^\.\//, '');
+    const response = await fetch(`${BASE_URL}/${cleanPath}`);
+    if (!response.ok) return '';
+    return await response.text();
+}
 
 export interface Env {
   // Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
@@ -223,7 +241,8 @@ function renderHomePage() {
     return render("Mahiro Oyama", content);
 }
 
-function renderArticlesPage() {
+async function renderArticlesPage() {
+    const articles = await fetchArticlesList();
     // Sort articles by date descending (newest first)
     const sortedArticles = [...articles].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -400,13 +419,14 @@ async function handlePublish(request: Request) {
     }
 }
 
-function renderArticlePage(slug: string) {
-    const article = articles.find(a => a.slug === slug);
+async function renderArticlePage(slug: string) {
+    const articles = await fetchArticlesList();
+    const article = articles.find((a: any) => a.slug === slug);
     if (!article) {
         return new Response('Not Found', { status: 404 });
     }
 
-    const markdown = articleContents[article.file as keyof typeof articleContents];
+    const markdown = await fetchArticleContent(article.file);
     const htmlContent = marked(markdown);
 
     const content = `
@@ -437,7 +457,8 @@ export default {
     }
 
     if (path === '/articles') {
-        return new Response(renderArticlesPage(), { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
+        const html = await renderArticlesPage();
+        return new Response(html, { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
     }
 
     if (path === '/publish') {
@@ -451,7 +472,7 @@ export default {
     const articleMatch = path.match(/^\/articles\/(.+)/);
     if (articleMatch) {
         const slug = articleMatch[1];
-        const response = renderArticlePage(slug);
+        const response = await renderArticlePage(slug);
         if (response instanceof Response) {
             return response;
         }

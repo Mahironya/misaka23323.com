@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "Personal website",
   "scripts": {
-    "generate-articles": "node scripts/generate-articles.js",
-    "deploy": "npm run generate-articles && wrangler deploy"
+    "deploy": "wrangler deploy"
   },
   "dependencies": {
     "katex": "^0.16.25",
