@@ -326,7 +326,9 @@ body {
 }
 
 .btn-primary {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     background-color: var(--text-color);
     color: var(--bg-color);
     text-decoration: none;
@@ -335,11 +337,19 @@ body {
     font-size: 0.9rem;
     border: none;
     cursor: pointer;
+    line-height: 1.5;
+    font-family: inherit;
+    vertical-align: middle;
 }
 
 .btn-primary:hover {
     opacity: 0.8;
     color: var(--bg-color);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Collections dropdown styling */
