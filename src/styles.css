@@ -333,6 +333,8 @@ body {
     padding: 0.5rem 1rem;
     border-radius: 6px;
     font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
 }
 
 .btn-primary:hover {
