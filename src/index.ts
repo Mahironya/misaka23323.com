@@ -72,6 +72,7 @@ const navBar = `
     <ul class="nav-links">
         <li class="nav-item"><a href="/">Home</a></li>
         <li class="nav-item"><a href="/articles">Articles</a></li>
+        <li class="nav-item"><button id="navRefreshArticles" class="btn-primary">Refresh Articles</button></li>
         <li class="nav-item dropdown">
             <a href="#">Projects ▾</a>
             <ul class="dropdown-menu">
@@ -134,6 +135,81 @@ const scripts = `
             progressBar.style.width = scrolled + "%";
         }
     };
+
+    // Refresh Articles (global nav) - tries to update article list if present
+    async function refreshArticlesGlobal() {
+        try {
+            const btn = document.getElementById('navRefreshArticles');
+            if (btn) { btn.setAttribute('disabled','true'); btn.textContent = 'Refreshing...'; }
+            const resp = await fetch('${BASE_URL}/articles.json');
+            if (!resp.ok) throw new Error('Failed to fetch articles.json');
+            const list = await resp.json();
+            // sort desc
+            list.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+            const container = document.getElementById('articlesContainer');
+            if (container) {
+                container.innerHTML = '';
+                list.forEach(article => {
+                    const item = document.createElement('div');
+                    item.className = 'article-item';
+                    const h2 = document.createElement('h2');
+                    const a = document.createElement('a');
+                    a.href = '/articles/' + encodeURIComponent(article.slug || '');
+                    a.textContent = article.title || '';
+                    h2.appendChild(a);
+                    if (article.collection) {
+                        const span = document.createElement('span');
+                        span.className = 'article-tag';
+                        const link = document.createElement('a');
+                        link.href = '/articles?collection=' + encodeURIComponent(article.collection);
+                        link.textContent = article.collection;
+                        span.appendChild(link);
+                        h2.appendChild(document.createTextNode(' '));
+                        h2.appendChild(span);
+                    }
+                    item.appendChild(h2);
+                    const p = document.createElement('p');
+                    p.textContent = article.date || '';
+                    item.appendChild(p);
+                    container.appendChild(item);
+                });
+            }
+
+            // update collections dropdown if present
+            const menu = document.getElementById('cdMenu');
+            const toggle = document.getElementById('cdToggle');
+            if (menu && toggle) {
+                const collections = Array.from(new Set(list.map(a => a.collection).filter(Boolean)));
+                const items = ['All', ...collections];
+                menu.innerHTML = items.map(it => {
+                    const value = it === 'All' ? '' : encodeURIComponent(it);
+                    return '<li class="cd-item"><button type="button" data-value="' + value + '">' + it + '</button></li>';
+                }).join('\\n');
+                Array.from(menu.querySelectorAll('button[data-value]')).forEach(btnEl => {
+                    btnEl.addEventListener('click', function(){
+                        const v = this.dataset.value || '';
+                        if (!v) location.href = '/articles'; else location.href = '/articles?collection=' + v;
+                    });
+                });
+            }
+
+            if (btn) { btn.removeAttribute('disabled'); btn.textContent = 'Refresh Articles'; }
+            // show small confirmation on pages without list
+            if (!container && !menu) {
+                alert('Articles refreshed');
+            }
+        } catch (err) {
+            alert('Refresh failed: ' + (err && err.message ? err.message : err));
+            const btn = document.getElementById('navRefreshArticles');
+            if (btn) { btn.removeAttribute('disabled'); btn.textContent = 'Refresh Articles'; }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        const navBtn = document.getElementById('navRefreshArticles');
+        if (navBtn) navBtn.addEventListener('click', function(e){ e.preventDefault(); refreshArticlesGlobal(); });
+    });
 </script>
 `;
 
