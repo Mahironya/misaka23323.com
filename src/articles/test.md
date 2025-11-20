@@ -1,3 +1,0 @@
-# Sekai de
-
-## hello sekai
