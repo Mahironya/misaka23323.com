@@ -3,20 +3,20 @@
     "title": "学部生が研究に走るということ——慎重に、そして確かに",
     "slug": "whether-undergraduates-should-do-research",
     "date": "2025-11-19",
-    "file": "./articles/my-first-article.md",
+    "file": "articles/my-first-article.md",
     "collection": "Opinions"
   },
   {
     "title": "Thirty Steps",
     "slug": "thirty-steps",
     "date": "2025-11-19",
-    "file": "./articles/20251119150556-thirty-steps.md"
+    "file": "articles/20251119150556-thirty-steps.md"
   },
   {
     "title": "鸭子下蛋问题",
     "slug": "duck-physics-problem",
     "date": "2025-11-19",
-    "file": "./articles/20251119150804-duck-physics-problem.md",
+    "file": "articles/20251119150804-duck-physics-problem.md",
     "collection": "Physics"
   }
 ]

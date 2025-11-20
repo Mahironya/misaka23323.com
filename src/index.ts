@@ -15,12 +15,31 @@ const BASE_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REP
 async function fetchArticlesList() {
     const response = await fetch(`${BASE_URL}/articles.json`);
     if (!response.ok) return [];
-    return await response.json() as any[];
+    const raw = await response.json() as any[];
+    // Normalize file paths in case entries point to unexpected locations
+    return raw.map(entry => {
+        const e = { ...entry } as any;
+        if (e.file && typeof e.file === 'string') {
+            let p = e.file.replace(/^\.\//, ''); // remove leading ./
+            p = p.replace(/^src\//, ''); // remove leading src/
+            p = p.replace(/^\/+/, ''); // remove leading /
+            if (!p.startsWith('articles/')) {
+                p = `articles/${p}`;
+            }
+            e.file = p;
+        }
+        return e;
+    });
 }
 
 async function fetchArticleContent(filename: string) {
-    // Remove ./ from the beginning if present
-    const cleanPath = filename.replace(/^\.\//, '');
+    // Normalize various possible file path forms to point under `src/articles/`
+    let cleanPath = filename.replace(/^\.\//, ''); // remove leading ./
+    cleanPath = cleanPath.replace(/^src\//, ''); // remove leading src/
+    cleanPath = cleanPath.replace(/^\/+/, ''); // remove leading /
+    if (!cleanPath.startsWith('articles/')) {
+        cleanPath = `articles/${cleanPath}`;
+    }
     const response = await fetch(`${BASE_URL}/${cleanPath}`);
     if (!response.ok) return '';
     return await response.text();
