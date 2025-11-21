@@ -25,6 +25,15 @@ const renderer = {
 
 marked.use({ renderer });
 
+function escapeHtml(value: string) {
+    return (value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 const GITHUB_OWNER = 'Mahironya';
 const GITHUB_REPO = 'misaka23323.com';
 const GITHUB_BRANCH = 'main';
@@ -76,6 +85,7 @@ export interface Env {
   // Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
   // MY_SERVICE: Fetcher;
   ASSETS: Fetcher;
+    TELEGRAM_CHANNEL?: string;
 }
 
 // CSS moved to styles.css
@@ -684,7 +694,7 @@ async function handlePublish(request: Request) {
     }
 }
 
-async function renderArticlePage(slug: string, url: string) {
+async function renderArticlePage(slug: string, url: string, telegramChannel?: string) {
     const articles = await fetchArticlesList();
     const article = articles.find((a: any) => a.slug === slug);
     if (!article) {
@@ -696,55 +706,78 @@ async function renderArticlePage(slug: string, url: string) {
 
     // Generate description for meta tags
     const plainText = htmlContent.replace(/<[^>]+>/g, '');
-    const description = plainText.substring(0, 200).replace(/\s+/g, ' ').trim() + '...';
-    const escapedDescription = description.replace(/"/g, '&quot;');
-    const escapedTitle = article.title.replace(/"/g, '&quot;');
+    const trimmedText = plainText.replace(/\s+/g, ' ').trim();
+    const summary = trimmedText.length > 200 ? `${trimmedText.substring(0, 200).trim()}...` : trimmedText;
+    const escapedDescription = escapeHtml(summary || 'Mahiro Oyama Article');
+    const escapedTitle = escapeHtml(article.title);
+    const canonicalUrl = url.split('#')[0];
+    const publishedDate = new Date(`${article.date}T00:00:00Z`);
+    const isoPublished = Number.isNaN(publishedDate.getTime()) ? article.date : publishedDate.toISOString();
+    const isoModified = isoPublished;
+    const section = (article as any).collection ? String((article as any).collection) : '';
+    const escapedSection = section ? escapeHtml(section) : '';
+    const telegramHandle = telegramChannel ? telegramChannel.trim() : '';
 
-    // Extract first image for meta tags
-    const imageMatch = markdown.match(/!\[.*?\]\((.*?)\)/);
-    let imageUrl = '';
-    if (imageMatch) {
-        imageUrl = imageMatch[1];
-        if (!imageUrl.startsWith('http')) {
-             const urlObj = new URL(url);
-             if (imageUrl.startsWith('/')) {
-                 imageUrl = urlObj.origin + imageUrl;
-             } else {
-                 const clean = imageUrl.replace(/^\.\//, '');
-                 imageUrl = `${urlObj.origin}/articles/${clean}`;
-             }
-        }
+    const jsonLd: Record<string, any> = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: article.title,
+        datePublished: isoPublished,
+        dateModified: isoModified,
+        author: {
+            '@type': 'Person',
+            name: 'Mahiro Oyama',
+        },
+        mainEntityOfPage: canonicalUrl,
+        description: summary || 'Mahiro Oyama Article',
+        url: canonicalUrl,
+    };
+
+    if (section) {
+        jsonLd.articleSection = section;
     }
 
-    const metaTags = `
-    <meta property="og:title" content="${escapedTitle}" />
-    <meta property="og:description" content="${escapedDescription}" />
-    <meta property="og:type" content="article" />
-    <meta property="og:url" content="${url}" />
-    <meta property="og:site_name" content="Mahiro Oyama" />
-    <meta property="article:published_time" content="${article.date}" />
-    <meta property="article:author" content="Mahiro Oyama" />
-    ${imageUrl ? `<meta property="og:image" content="${imageUrl}" />` : ''}
-    <meta name="twitter:card" content="${imageUrl ? 'summary_large_image' : 'summary'}" />
-    <meta name="twitter:title" content="${escapedTitle}" />
-    <meta name="twitter:description" content="${escapedDescription}" />
-    ${imageUrl ? `<meta name="twitter:image" content="${imageUrl}" />` : ''}
-    <meta name="description" content="${escapedDescription}" />
-    <meta name="author" content="Mahiro Oyama" />
-    `;
+    const jsonLdString = JSON.stringify(jsonLd, null, 2).replace(/</g, '\\u003C');
 
-    const collectionHtml = (article as any).collection ? ` <span class="article-tag"><a href="/articles?collection=${encodeURIComponent((article as any).collection)}">${(article as any).collection}</a></span>` : '';
+    const metaParts = [
+        `<link rel="canonical" href="${canonicalUrl}">`,
+        `<meta property="og:title" content="${escapedTitle}">`,
+        `<meta property="og:description" content="${escapedDescription}">`,
+        `<meta property="og:type" content="article">`,
+        `<meta property="og:url" content="${canonicalUrl}">`,
+        `<meta property="og:site_name" content="Mahiro Oyama">`,
+        `<meta property="article:published_time" content="${isoPublished}">`,
+        `<meta property="article:modified_time" content="${isoModified}">`,
+        `<meta property="article:author" content="Mahiro Oyama">`,
+        section ? `<meta property="article:section" content="${escapedSection}">` : '',
+        `<meta name="twitter:card" content="summary_large_image">`,
+        `<meta name="twitter:title" content="${escapedTitle}">`,
+        `<meta name="twitter:description" content="${escapedDescription}">`,
+        `<meta name="twitter:url" content="${canonicalUrl}">`,
+        telegramHandle ? `<meta property="telegram:channel" content="${telegramHandle.startsWith('@') ? telegramHandle : '@' + telegramHandle}">` : '',
+        `<script type="application/ld+json">${jsonLdString}</script>`
+    ].filter(Boolean);
+
+    const metaTags = metaParts.join('\n    ');
+
+    const collectionHtml = section ? ` <span class="article-tag" itemprop="articleSection"><a href="/articles?collection=${encodeURIComponent(section)}">${section}</a></span>` : '';
 
     const content = `
-<article class="article-content">
-    <header>
-        <h1>${article.title}${collectionHtml}</h1>
+<article class="article-content" itemscope itemtype="https://schema.org/Article" data-iv-entry="article">
+    <meta itemprop="mainEntityOfPage" content="${canonicalUrl}">
+    <meta itemprop="url" content="${canonicalUrl}">
+    <header class="article-header">
+        <h1 itemprop="headline">${article.title}${collectionHtml}</h1>
         <div class="article-meta">
-            <address class="author">By <a href="/" rel="author">Mahiro Oyama</a></address>
-            <time datetime="${article.date}" pubdate>${article.date}</time>
+            <time datetime="${isoPublished}" itemprop="datePublished">${article.date}</time>
+            <meta itemprop="dateModified" content="${isoModified}">
+            <span class="article-author" itemprop="author" itemscope itemtype="https://schema.org/Person">
+                <meta itemprop="name" content="Mahiro Oyama">
+                Mahiro Oyama
+            </span>
         </div>
     </header>
-    <div class="content" data-speechify-content>
+    <div class="content" itemprop="articleBody">
         ${htmlContent}
     </div>
 </article>
@@ -835,7 +868,7 @@ export default {
     const articleMatch = path.match(/^\/articles\/(.+)/);
     if (articleMatch) {
         const slug = articleMatch[1];
-        const response = await renderArticlePage(slug, request.url);
+        const response = await renderArticlePage(slug, request.url, env.TELEGRAM_CHANNEL);
         if (response instanceof Response) {
             return response;
         }
