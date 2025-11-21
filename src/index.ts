@@ -265,6 +265,7 @@ function renderHomePage() {
     .hero {
         flex-direction: column;
         gap: 3rem;
+        justify-content: center;
     }
 
     .hero-content, .hero-links {
