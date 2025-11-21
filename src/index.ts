@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import markedKatex from './markedKatexWithFallback';
+import markedKatex from 'marked-katex-extension';
 import styles from './styles.css';
 
 marked.use(markedKatex({
@@ -11,8 +11,7 @@ marked.use(markedKatex({
         "\\label": "\\href{#1}{}",
         "\\eqref": "\\href{#1}{}",
         "\\require": "\\href{#1}{}",
-    },
-    fallbackDpi: 200,
+    }
 }));
 
 const renderer = {
