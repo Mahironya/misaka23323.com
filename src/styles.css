@@ -265,6 +265,15 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+.math-fragment {
+    position: relative;
+}
+
+.math-fallback {
+    display: none;
+    max-width: 100%;
+}
+
 /* Form Styles */
 .publish-form {
     max-width: 800px;
