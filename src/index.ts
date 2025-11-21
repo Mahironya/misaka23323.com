@@ -4,7 +4,14 @@ import styles from './styles.css';
 
 marked.use(markedKatex({
     throwOnError: false,
-    nonStandard: true
+    nonStandard: true,
+    strict: false,
+    trust: true,
+    macros: {
+        "\\label": "\\href{#1}{}",
+        "\\eqref": "\\href{#1}{}",
+        "\\require": "\\href{#1}{}",
+    }
 }));
 
 const GITHUB_OWNER = 'Mahironya';
@@ -72,6 +79,7 @@ const navBar = `
     <ul class="nav-links">
         <li class="nav-item"><a href="/">Home</a></li>
         <li class="nav-item"><a href="/articles">Articles</a></li>
+        <li class="nav-item" id="navRefreshItem" style="display:none"><a href="#" id="navRefreshBtn">Refresh Article</a></li>
         <li class="nav-item dropdown">
             <a href="#">Projects ▾</a>
             <ul class="dropdown-menu">
@@ -345,7 +353,7 @@ async function renderArticlesPage(url?: URL) {
 <div class="article-list">
     <div class="header-actions">
         <h1>Articles</h1>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
+        <div class="header-buttons">
             <a href="/publish" class="btn-primary">Publish Article</a>
             <button id="refreshArticles" class="btn-primary">Refresh Articles</button>
         </div>
@@ -359,12 +367,11 @@ async function renderArticlesPage(url?: URL) {
     return render("Articles", content + `
 <script>
     (function(){
-        const btn = document.getElementById('refreshArticles');
-        if (!btn) return;
-        btn.addEventListener('click', async function(){
-            try{
-                btn.disabled = true;
-                btn.textContent = 'Refreshing...';
+        const refresh = async function(btn) {
+            try {
+                btn.classList.add('btn-loading');
+                const minDelay = new Promise(resolve => setTimeout(resolve, 500));
+                
                 const resp = await fetch('${BASE_URL}/articles.json');
                 if (!resp.ok) throw new Error('Network response was not ok');
                 const list = await resp.json();
@@ -429,11 +436,22 @@ async function renderArticlesPage(url?: URL) {
                     });
                 }
 
+                await minDelay;
+
             } catch (err) {
                 alert('Refresh failed: ' + (err && err.message ? err.message : err));
             } finally {
-                btn.disabled = false;
-                btn.textContent = 'Refresh Articles';
+                btn.classList.remove('btn-loading');
+            }
+        };
+
+        const btns = [document.getElementById('refreshArticles')];
+        btns.forEach(btn => {
+            if (btn) {
+                btn.addEventListener('click', function(e){
+                    e.preventDefault();
+                    refresh(this);
+                });
             }
         });
     })();
@@ -679,6 +697,39 @@ async function renderArticlePage(slug: string) {
         ${htmlContent}
     </div>
 </div>
+<script>
+    (function() {
+        const navItem = document.getElementById('navRefreshItem');
+        const navBtn = document.getElementById('navRefreshBtn');
+        if (navItem && navBtn) {
+            navItem.style.display = 'flex';
+            
+            navBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                navBtn.classList.add('btn-loading');
+                const minDelay = new Promise(resolve => setTimeout(resolve, 500));
+                
+                try {
+                    const response = await fetch(window.location.href);
+                    if (!response.ok) throw new Error('Network error');
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newContent = doc.querySelector('.article-content');
+                    const currentContent = document.querySelector('.article-content');
+                    if (newContent && currentContent) {
+                        currentContent.innerHTML = newContent.innerHTML;
+                    }
+                    await minDelay;
+                } catch (err) {
+                    alert('Failed to refresh: ' + (err.message || err));
+                } finally {
+                    navBtn.classList.remove('btn-loading');
+                }
+            });
+        }
+    })();
+</script>
 `;
     return render(article.title, content);
 }

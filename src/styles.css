@@ -256,6 +256,14 @@ body {
 .content a { color: var(--accent-color); text-decoration: none; }
 .content a:hover { text-decoration: underline; }
 
+/* KaTeX Display Overflow */
+.katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 1em 0;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Form Styles */
 .publish-form {
     max-width: 800px;
@@ -323,6 +331,12 @@ body {
 
 .header-actions h1 {
     margin-bottom: 0;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .btn-primary {
@@ -638,4 +652,44 @@ body {
         width: 100%;
         overflow-x: auto;
     }
+
+    .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .header-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .header-buttons .btn-primary {
+        width: 100%;
+    }
+}
+
+/* Loading Animation */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+    cursor: wait !important;
+}
+
+.btn-loading::after {
+    content: "";
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    margin-left: 8px;
+    vertical-align: middle;
+    animation: spin 0.8s linear infinite;
 }
