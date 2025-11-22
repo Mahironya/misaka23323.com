@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useGameLogic } from './hooks/useGameLogic';
 import { Dot } from './components/Dot';
 import { ConnectorOverlay } from './components/ConnectorOverlay';
@@ -22,13 +22,20 @@ const App: React.FC = () => {
     resetGame
   } = useGameLogic();
 
+  const boardRef = useRef<HTMLDivElement | null>(null);
+  const pointerActiveRef = useRef(false);
+
   // Global pointer up handler
   useEffect(() => {
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('mouseup', handlePointerUp);
+    const onPointerUp = () => {
+      pointerActiveRef.current = false;
+      handlePointerUp();
+    };
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('mouseup', onPointerUp);
     return () => {
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('mouseup', onPointerUp);
     };
   }, [handlePointerUp]);
 
@@ -38,6 +45,42 @@ const App: React.FC = () => {
     if (config.rows === size) return;
     playClickSound();
     resetGame(size);
+  };
+
+  const getCellFromPointer = useCallback((clientX: number, clientY: number) => {
+    const board = boardRef.current;
+    if (!board) return null;
+    const rect = board.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) return null;
+    const colWidth = rect.width / config.cols;
+    const rowHeight = rect.height / config.rows;
+    const col = Math.min(config.cols - 1, Math.max(0, Math.floor(x / colWidth)));
+    const row = Math.min(config.rows - 1, Math.max(0, Math.floor(y / rowHeight)));
+    return { row, col };
+  }, [config.cols, config.rows]);
+
+  const handleBoardPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const cell = getCellFromPointer(e.clientX, e.clientY);
+    if (!cell) return;
+    pointerActiveRef.current = true;
+    handleDotDown(cell.row, cell.col);
+  };
+
+  const handleBoardPointerMove = (e: React.PointerEvent) => {
+    if (!pointerActiveRef.current) return;
+    e.preventDefault();
+    const cell = getCellFromPointer(e.clientX, e.clientY);
+    if (!cell) return;
+    handleDotEnter(cell.row, cell.col);
+  };
+
+  const handleBoardPointerUp = () => {
+    if (!pointerActiveRef.current) return;
+    pointerActiveRef.current = false;
+    handlePointerUp();
   };
 
   // Size selector button helper
@@ -82,7 +125,8 @@ const App: React.FC = () => {
               style={{ touchAction: 'none' }}
           >
               {/* Dynamic Grid */}
-              <div 
+                <div 
+                  ref={boardRef}
                   className="grid relative mx-auto"
                   style={{ 
                       width: 'clamp(260px, 80vw, 420px)', 
@@ -90,7 +134,10 @@ const App: React.FC = () => {
                       gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
                       gridTemplateRows: `repeat(${config.rows}, minmax(0, 1fr))`
                   }}
-                  onPointerLeave={handlePointerUp}
+                  onPointerDown={handleBoardPointerDown}
+                  onPointerMove={handleBoardPointerMove}
+                  onPointerUp={handleBoardPointerUp}
+                  onPointerLeave={handleBoardPointerUp}
               >
                   {/* SVG Overlay for Lines */}
                   <ConnectorOverlay 
@@ -110,16 +157,14 @@ const App: React.FC = () => {
                           const isSquareHighlight = isSquare && activeColor === dot.color;
 
                           return (
-                              <Dot
+                                <Dot
                                   key={dot.id}
                                   dot={dot}
                                   row={rIdx}
                                   col={cIdx}
                                   isSelected={inPath || isSquareHighlight}
                                   isSquare={isSquare}
-                                  onDown={handleDotDown}
-                                  onEnter={handleDotEnter}
-                              />
+                                />
                           );
                       })
                   ))}

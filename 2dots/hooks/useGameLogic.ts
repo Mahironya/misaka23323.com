@@ -102,16 +102,18 @@ export const useGameLogic = () => {
     const existingIndex = path.findIndex(p => p.row === row && p.col === col);
     
     if (existingIndex !== -1) {
-      // If we touch a dot already in path (not the immediate previous one, which is handled by backtrack)
-      // We have a square!
-      setIsSquare(true);
-      setPath((prev) => [...prev, { row, col }]); // Add it to close the visual loop
-      playSquareSound();
-    } else {
-      // New dot
-      setPath((prev) => [...prev, { row, col }]);
-      playPopSound(path.length);
+      // Only treat returning to the starting dot (index 0) as a square loop
+      if (existingIndex === 0 && path.length >= 3) {
+        setIsSquare(true);
+        setPath((prev) => [...prev, { row, col }]); // close loop visually
+        playSquareSound();
+      }
+      return;
     }
+
+    // New dot
+    setPath((prev) => [...prev, { row, col }]);
+    playPopSound(path.length);
   };
 
   const handlePointerUp = () => {
