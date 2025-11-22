@@ -45,11 +45,20 @@ export const Dot: React.FC<DotProps> = ({
     onEnter(row, col);
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    const isTouch = e.pointerType === 'touch';
+    const isDragging = e.buttons > 0 || isTouch;
+    if (!isDragging) return;
+    e.preventDefault();
+    onEnter(row, col);
+  };
+
   return (
     <div 
       className="w-full h-full flex items-center justify-center select-none touch-none p-1"
       onPointerDown={handlePointerDown}
       onPointerEnter={handlePointerEnter}
+      onPointerMove={handlePointerMove}
     >
       {/* Wrapper handles the enter animation without affecting hit targets or conflicting with inner transforms */}
       <div className="w-full h-full flex items-center justify-center animate-pop-in" style={{ animationDelay }}>
