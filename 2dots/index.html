@@ -64,6 +64,7 @@
     <a href="/" class="logo">Mahiro Oyama</a>
     <div class="menu-toggle">☰</div>
     <ul class="nav-links">
+      <li class="mobile-close-btn">✕</li>
       <li class="nav-item"><a href="/">Home</a></li>
       <li class="nav-item"><a href="/articles">Articles</a></li>
       <li class="nav-item" id="navRefreshItem" style="display:none"><a href="#" id="navRefreshBtn">Refresh Article</a></li>
@@ -72,6 +73,7 @@
         <ul class="dropdown-menu">
           <li class="dropdown-item"><a href="/2048/">2048 Game</a></li>
           <li class="dropdown-item"><a href="/2dots/">2dots Game</a></li>
+          <li class="dropdown-item"><a href="/MikuBot/">MikuBot</a></li>
         </ul>
       </li>
       <li class="nav-item"><a href="#about">About</a></li>
@@ -84,6 +86,7 @@
   const menuToggle = document.querySelector('.menu-toggle');
   const navLinks = document.querySelector('.nav-links');
   const overlay = document.querySelector('.overlay');
+  const closeBtn = document.querySelector('.mobile-close-btn');
     
   function toggleMenu() {
     navLinks.classList.toggle('active');
@@ -93,6 +96,7 @@
 
   if (menuToggle && navLinks && overlay) {
     menuToggle.addEventListener('click', toggleMenu);
+    if (closeBtn) closeBtn.addEventListener('click', toggleMenu);
     overlay.addEventListener('click', toggleMenu);
 
     // Close menu when clicking a link

@@ -108,6 +108,7 @@ const navBar = `
             <ul class="dropdown-menu">
                 <li class="dropdown-item"><a href="/2048/">2048 Game</a></li>
                 <li class="dropdown-item"><a href="/2dots/">2dots Game</a></li>
+                <li class="dropdown-item"><a href="/MikuBot/">MikuBot</a></li>
             </ul>
         </li>
         <li class="nav-item"><a href="#about">About</a></li>
@@ -877,6 +878,26 @@ export default {
             // If accessing /2dots without slash, redirect to /2dots/
             if (path === '/2dots') {
                 return Response.redirect(url.origin + '/2dots/', 301);
+            }
+            // If accessing a directory (ending in /), try index.html
+            if (path.endsWith('/')) {
+                const newUrl = new URL(url);
+                newUrl.pathname += 'index.html';
+                response = await env.ASSETS.fetch(new Request(newUrl, request));
+            }
+        }
+
+        return response;
+    }
+
+    if (path.startsWith('/MikuBot')) {
+        // Handle mikubot assets
+        let response = await env.ASSETS.fetch(request);
+        
+        if (response.status === 404) {
+            // If accessing /MikuBot without slash, redirect to /MikuBot/
+            if (path === '/MikuBot') {
+                return Response.redirect(url.origin + '/MikuBot/', 301);
             }
             // If accessing a directory (ending in /), try index.html
             if (path.endsWith('/')) {
