@@ -55,80 +55,81 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 relative overflow-hidden bg-slate-50">
-      
-      {/* Header */}
-      <header className="relative z-10 mb-6 text-center">
-        <h1 className="text-4xl font-black tracking-tight text-slate-800 drop-shadow-sm mb-4">
-          Two<span className="text-red-500">Dots</span>
-        </h1>
-        <div className="flex gap-2 justify-center">
-            <SizeBtn size={6} />
-            <SizeBtn size={8} />
-            <SizeBtn size={10} />
+    <div className="min-h-[calc(100vh-60px)] w-full bg-slate-50 flex justify-center px-4 py-10">
+      <div className="w-full max-w-[520px] flex flex-col items-center text-center gap-6">
+        {/* Header */}
+        <header className="relative z-10 space-y-4">
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-800 drop-shadow-sm">
+            Two<span className="text-red-500">Dots</span>
+          </h1>
+          <div className="flex gap-2 justify-center flex-wrap">
+              <SizeBtn size={6} />
+              <SizeBtn size={8} />
+              <SizeBtn size={10} />
+          </div>
+        </header>
+
+        {/* Score Board */}
+        <div className="relative z-10 w-full flex justify-center">
+            <ScoreBoard score={score} highScore={highScore} moves={movesLeft} onReset={() => resetGame()} />
         </div>
-      </header>
 
-      {/* Score Board */}
-      <div className="relative z-10 w-full flex justify-center mb-6">
-          <ScoreBoard score={score} highScore={highScore} moves={movesLeft} onReset={() => resetGame()} />
-      </div>
-
-      {/* Game Board Container */}
-      <div className="relative z-10 touch-none select-none">
-        <div 
-            className="bg-white p-2 rounded-3xl shadow-xl border border-slate-200 relative"
-            style={{ touchAction: 'none' }}
-        >
-            {/* Dynamic Grid */}
-            <div 
-                className="grid relative"
-                style={{ 
-                    width: 'min(90vw, 400px)', 
-                    height: 'min(90vw, 400px)',
-                    gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
-                    gridTemplateRows: `repeat(${config.rows}, minmax(0, 1fr))`
-                }}
-                onPointerLeave={handlePointerUp}
-            >
+        {/* Game Board Container */}
+        <div className="relative z-10 touch-none select-none w-full flex justify-center">
                 {/* SVG Overlay for Lines */}
-                <ConnectorOverlay 
-                  path={path} 
-                  color={activeColor || null} 
-                  isSquare={isSquare} 
-                  rows={config.rows}
-                  cols={config.cols}
-                />
+          <div 
+              className="bg-white p-3 sm:p-4 rounded-3xl shadow-xl border border-slate-200 relative w-full max-w-[460px]"
+              style={{ touchAction: 'none' }}
+          >
+              {/* Dynamic Grid */}
+              <div 
+                  className="grid relative mx-auto"
+                  style={{ 
+                      width: 'clamp(260px, 80vw, 420px)', 
+                      height: 'clamp(260px, 80vw, 420px)',
+                      gridTemplateColumns: `repeat(${config.cols}, minmax(0, 1fr))`,
+                      gridTemplateRows: `repeat(${config.rows}, minmax(0, 1fr))`
+                  }}
+                  onPointerLeave={handlePointerUp}
+              >
+                  {/* SVG Overlay for Lines */}
+                  <ConnectorOverlay 
+                    path={path} 
+                    color={activeColor || null} 
+                    isSquare={isSquare} 
+                    rows={config.rows}
+                    cols={config.cols}
+                  />
 
-                {/* Dots */}
-                {grid.map((row, rIdx) => (
-                    row.map((dot, cIdx) => {
-                        if (!dot) return <div key={`${rIdx}-${cIdx}`} className="w-full h-full" />;
+                  {/* Dots */}
+                  {grid.map((row, rIdx) => (
+                      row.map((dot, cIdx) => {
+                          if (!dot) return <div key={`${rIdx}-${cIdx}`} className="w-full h-full" />;
 
-                        const inPath = path.some(p => p.row === rIdx && p.col === cIdx);
-                        const isSquareHighlight = isSquare && activeColor === dot.color;
+                          const inPath = path.some(p => p.row === rIdx && p.col === cIdx);
+                          const isSquareHighlight = isSquare && activeColor === dot.color;
 
-                        return (
-                            <Dot
-                                key={dot.id}
-                                dot={dot}
-                                row={rIdx}
-                                col={cIdx}
-                                isSelected={inPath || isSquareHighlight}
-                                isSquare={isSquare}
-                                onDown={handleDotDown}
-                                onEnter={handleDotEnter}
-                            />
-                        );
-                    })
-                ))}
-            </div>
+                          return (
+                              <Dot
+                                  key={dot.id}
+                                  dot={dot}
+                                  row={rIdx}
+                                  col={cIdx}
+                                  isSelected={inPath || isSquareHighlight}
+                                  isSquare={isSquare}
+                                  onDown={handleDotDown}
+                                  onEnter={handleDotEnter}
+                              />
+                          );
+                      })
+                  ))}
+              </div>
+          </div>
         </div>
+        
+        {/* Game Over Modal */}
+        <GameOverModal score={score} isOpen={isGameOver} onRestart={() => resetGame()} />
       </div>
-      
-      {/* Game Over Modal */}
-      <GameOverModal score={score} isOpen={isGameOver} onRestart={() => resetGame()} />
-      
     </div>
   );
 };

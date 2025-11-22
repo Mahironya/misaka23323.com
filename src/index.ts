@@ -882,6 +882,7 @@ export default {
                 response = await env.ASSETS.fetch(new Request(newUrl, request));
             }
         }
+
         return response;
     }
 

@@ -43,6 +43,7 @@
         touch-action: none;
       }
     </style>
+    <link rel="stylesheet" href="/styles.css">
 
   <script type="importmap">
 {
@@ -54,9 +55,81 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/2dots/assets/index-Uf597qU4.js"></script>
+  <script type="module" crossorigin src="/2dots/assets/index-CzoGrYbO.js"></script>
 </head>
-  <body class="bg-slate-50 text-slate-900 overflow-hidden">
-    <div id="root"></div>
+  <body class="bg-slate-50 text-slate-900 overflow-hidden" style="padding-top: 60px;">
+  <div class="progress-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+  <div class="overlay"></div>
+  <nav class="navbar">
+    <a href="/" class="logo">Mahiro Oyama</a>
+    <div class="menu-toggle">☰</div>
+    <ul class="nav-links">
+      <li class="nav-item"><a href="/">Home</a></li>
+      <li class="nav-item"><a href="/articles">Articles</a></li>
+      <li class="nav-item" id="navRefreshItem" style="display:none"><a href="#" id="navRefreshBtn">Refresh Article</a></li>
+      <li class="nav-item dropdown">
+        <a href="#">Projects ▾</a>
+        <ul class="dropdown-menu">
+          <li class="dropdown-item"><a href="/2048/">2048 Game</a></li>
+          <li class="dropdown-item"><a href="/2dots/">2dots Game</a></li>
+        </ul>
+      </li>
+      <li class="nav-item"><a href="#about">About</a></li>
+    </ul>
+  </nav>
+  <div id="root"></div>
+<script>
+  // Mobile Menu Toggle
+  const menuToggle = document.querySelector('.menu-toggle');
+  const navLinks = document.querySelector('.nav-links');
+  const overlay = document.querySelector('.overlay');
+    
+  function toggleMenu() {
+    navLinks.classList.toggle('active');
+    overlay.classList.toggle('active');
+    document.body.style.overflow = navLinks.classList.contains('active') ? 'hidden' : '';
+  }
+
+  if (menuToggle && navLinks && overlay) {
+    menuToggle.addEventListener('click', toggleMenu);
+    overlay.addEventListener('click', toggleMenu);
+
+    // Close menu when clicking a link
+    navLinks.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        // Don't close menu if clicking a dropdown toggle
+        if (link.parentElement.classList.contains('dropdown')) {
+          e.preventDefault();
+          return;
+        }
+        if (navLinks.classList.contains('active')) toggleMenu();
+      });
+    });
+  }
+
+  // Mobile Dropdown Toggle
+  const dropdowns = document.querySelectorAll('.dropdown');
+  dropdowns.forEach(dropdown => {
+    dropdown.addEventListener('click', (e) => {
+      if (window.innerWidth <= 768) {
+        e.stopPropagation(); // Prevent bubbling to navLinks click
+        dropdown.classList.toggle('active');
+      }
+    });
+  });
+
+  // Progress Bar
+  window.onscroll = function() {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    const progressBar = document.getElementById("progressBar");
+    if (progressBar) {
+      progressBar.style.width = scrolled + "%";
+    }
+  };
+</script>
 </body>
 </html>
